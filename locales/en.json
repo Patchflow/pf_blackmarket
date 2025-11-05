@@ -1,0 +1,36 @@
+{
+	"ui.blackmarket": "Blackmarket",
+	"ui.cart": "Cart",
+	"ui.cart_empty": "Cart is empty",
+	"ui.no_categories": "No Categories",
+	"ui.price": "$%s",
+	"ui.open_blackmarket": "Open Blackmarket",
+	"ui.cancel": "Cancel",
+	"ui.confirm_purchase": "Confirm Purchase",
+
+	"cart.total": "Total",
+	"cart.checkout": "Checkout",
+
+	"item.add_to_cart": "Add to Cart",
+	"item.not_found": "No items found",
+
+	"error.purchase_failed": "Purchase Failed",
+	"error.invalid_category": "Invalid category",
+	"error.invalid_item": "Invalid item",
+	"error.invalid_quantity": "Invalid quantity",
+	"error.insufficient_funds": "Insufficient funds",
+	"error.insufficient_weight": "Cannot carry that much weight",
+	"error.validation_failed": "Validation failed",
+	"error.payment_failed": "Payment failed",
+	"error.inventory_full": "Inventory is full",
+	"error.no_framework": "No framework detected",
+	"error.too_far": "You're too far away",
+
+	"log.purchase_success": "Successfully purchased %s items for $%s",
+	"log.purchase_failed": "Failed to purchase: %s | %s items for $%s",
+	"log.discord_title_success": "✅ Blackmarket Purchase",
+	"log.discord_title_failed": "❌ Purchase Failed: %s",
+	"log.discord_player": "Player",
+	"log.discord_total_price": "Total Price",
+	"log.discord_items": "Items"
+}

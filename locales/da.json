@@ -1,0 +1,36 @@
+{
+	"ui.blackmarket": "Blackmarket",
+	"ui.cart": "Indkøbskurv",
+	"ui.cart_empty": "Indkøbskurven er tom",
+	"ui.no_categories": "Ingen Kategorier",
+	"ui.price": "%s DKK",
+	"ui.open_blackmarket": "Åben Blackmarket",
+	"ui.cancel": "Annuller",
+	"ui.confirm_purchase": "Bekræft køb",
+
+	"cart.total": "I alt",
+	"cart.checkout": "Betal",
+
+	"item.add_to_cart": "Tilføj til kurv",
+	"item.not_found": "Ingen items fundet",
+
+	"error.purchase_failed": "Køb Fejlede",
+	"error.invalid_category": "Ugyldig kategori",
+	"error.invalid_item": "Ugyldigt item",
+	"error.invalid_quantity": "Ugyldig mængde",
+	"error.insufficient_funds": "Utilstrækkelige midler",
+	"error.insufficient_weight": "Kan ikke bære så meget vægt",
+	"error.validation_failed": "Validering fejlede",
+	"error.payment_failed": "Betaling fejlede",
+	"error.inventory_full": "Inventory er fuld",
+	"error.no_framework": "Ingen framework fundet",
+	"error.too_far": "Du er for langt væk",
+
+	"log.purchase_success": "Købte %s items for %s DKK",
+	"log.purchase_failed": "Køb fejlede: %s | %s items for %s DKK",
+	"log.discord_title_success": "✅ Blackmarket Køb",
+	"log.discord_title_failed": "❌ Køb Fejlede: %s",
+	"log.discord_player": "Spiller",
+	"log.discord_total_price": "Total Pris",
+	"log.discord_items": "Items"
+}

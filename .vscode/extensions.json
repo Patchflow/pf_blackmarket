@@ -1,0 +1,9 @@
+{
+	"recommendations": [
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode",
+		"sumneko.lua",
+		"communityox.cfxlua-vscode-cox",
+		"bradlc.vscode-tailwindcss"
+	]
+}

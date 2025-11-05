@@ -1,0 +1,6 @@
+---@enum NuiCallbackType
+NuiCallbackType = {
+	PROCESS_PURCHASE = "PROCESS_PURCHASE",
+	NUI_CLOSE = "NUI_CLOSE",
+	REQUEST_CONFIG = "REQUEST_CONFIG",
+}
