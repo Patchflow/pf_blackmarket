@@ -26,7 +26,7 @@ UI source code er ikke inkluderet med vilje. Vi holder på vores components og h
 
 ## Support
 
-Ved spørgsmål kontakt os på Discord.
+Ved spørgsmål kontakt os på Discord. - https://discord.gg/mfM9uRKEHx
 
 ---
 
