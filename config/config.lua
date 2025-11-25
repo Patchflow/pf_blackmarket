@@ -5,7 +5,7 @@ return {
 	PaymentType = PaymentType.BANK,
 	CashItem = "money",
 
-	DiscordWebhook = "https://discord.com/api/webhooks/1391769874199740587/UI_ZiBqDkbVSVADN3lunvjkvmLWuRvLmM2ritVZeo1PYvSn_FZJ_qCpZYGAuc6GKvaGx",
+	DiscordWebhook = "",
 
 	Logging = {
 		Enabled = true,
