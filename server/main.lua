@@ -168,7 +168,24 @@ lib.callback.register("pf_blackmarket:server:processPurchase", function(source, 
 		return { success = false, reason = PurchaseError.NO_FRAMEWORK }
 	end
 
-	if #(GetEntityCoords(GetPlayerPed(source)) - vec3(Config.Peds[1].coords.x, Config.Peds[1].coords.y, Config.Peds[1].coords.z)) > 5.0 then
+	local pedLocations = lib.callback.await("pf_blackmarket:client:getPedLocations", source)
+	if not pedLocations or #pedLocations == 0 then
+		Logger.LogPurchase(source, data.items, 0, false, PurchaseError.TOO_FAR)
+		return { success = false, reason = PurchaseError.TOO_FAR }
+	end
+
+	local playerPos = GetEntityCoords(GetPlayerPed(source))
+	local isNearPed = false
+
+	for i = 1, #pedLocations do
+		local pedPos = pedLocations[i]
+		if #(playerPos - vec3(pedPos.x, pedPos.y, pedPos.z)) <= 5.0 then
+			isNearPed = true
+			break
+		end
+	end
+
+	if not isNearPed then
 		Logger.LogPurchase(source, data.items, 0, false, PurchaseError.TOO_FAR)
 		return { success = false, reason = PurchaseError.TOO_FAR }
 	end
