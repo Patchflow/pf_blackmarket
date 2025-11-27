@@ -14,7 +14,7 @@
 
 ---@class PedConfig
 ---@field model string
----@field coords vector4
+---@field possibleLocations vector4[]
 ---@field scenario string?
 
 ---@class LoggingConfig
