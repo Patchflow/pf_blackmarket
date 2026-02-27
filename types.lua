@@ -1,5 +1,4 @@
 ---@meta
-
 ---@class ItemConfig
 ---@field name string
 ---@field label string?
@@ -28,6 +27,7 @@
 ---@field CashItem string
 ---@field DiscordWebhook string
 ---@field Logging LoggingConfig
+---@field RelocationSchedule CronSchedule
 ---@field Peds PedConfig[]
 ---@field Categories table<string, CategoryConfig>
 

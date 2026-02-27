@@ -159,6 +159,32 @@ local function addItemsToInventory(source, validatedItems, totalPrice)
 	return true
 end
 
+---@type vector4[]
+local currentPedPositions = {}
+
+local function pickPedPositions()
+	local positions = {}
+	for _, pedConfig in ipairs(Config.Peds) do
+		positions[#positions + 1] = pedConfig.possibleLocations[math.random(#pedConfig.possibleLocations)]
+	end
+	return positions
+end
+
+local function relocatePeds()
+	currentPedPositions = pickPedPositions()
+	TriggerClientEvent("pf_blackmarket:client:relocatePeds", -1, currentPedPositions)
+end
+
+currentPedPositions = pickPedPositions()
+
+lib.cron.new(Config.RelocationSchedule, function()
+	relocatePeds()
+end, { maxDelay = 60 })
+
+lib.callback.register("pf_blackmarket:server:getPedPositions", function()
+	return currentPedPositions
+end)
+
 ---@param source number
 ---@param data PurchaseData
 ---@return PurchaseResult
@@ -168,8 +194,7 @@ lib.callback.register("pf_blackmarket:server:processPurchase", function(source, 
 		return { success = false, reason = PurchaseError.NO_FRAMEWORK }
 	end
 
-	local pedLocations = lib.callback.await("pf_blackmarket:client:getPedLocations", source)
-	if not pedLocations or #pedLocations == 0 then
+	if #currentPedPositions == 0 then
 		Logger.LogPurchase(source, data.items, 0, false, PurchaseError.TOO_FAR)
 		return { success = false, reason = PurchaseError.TOO_FAR }
 	end
@@ -177,8 +202,8 @@ lib.callback.register("pf_blackmarket:server:processPurchase", function(source, 
 	local playerPos = GetEntityCoords(GetPlayerPed(source))
 	local isNearPed = false
 
-	for i = 1, #pedLocations do
-		local pedPos = pedLocations[i]
+	for i = 1, #currentPedPositions do
+		local pedPos = currentPedPositions[i]
 		if #(playerPos - vec3(pedPos.x, pedPos.y, pedPos.z)) <= 5.0 then
 			isNearPed = true
 			break

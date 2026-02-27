@@ -24,3 +24,14 @@ LogEvent = {
 	PURCHASE_SUCCESS = "purchase_success",
 	PURCHASE_FAILED = "purchase_failed"
 }
+
+---@enum CronSchedule
+CronSchedule = {
+	EVERY_30_MINUTES = "*/30 * * * *",
+	EVERY_HOUR = "0 * * * *",
+	EVERY_2_HOURS = "0 */2 * * *",
+	EVERY_4_HOURS = "0 */4 * * *",
+	EVERY_6_HOURS = "0 */6 * * *",
+	EVERY_12_HOURS = "0 */12 * * *",
+	EVERY_DAY = "0 0 * * *",
+}

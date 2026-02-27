@@ -2,24 +2,27 @@
 local Config = lib.load("config.config")
 
 local spawnedPeds = {}
-local pedLocations = {}
 
 local function cleanupPeds()
 	for _, ped in ipairs(spawnedPeds) do
 		if DoesEntityExist(ped) then
+			exports.ox_target:removeLocalEntity(ped, "blackmarket_open")
+			SetEntityAsMissionEntity(ped, true, true)
 			DeleteEntity(ped)
 		end
 	end
 	spawnedPeds = {}
-	pedLocations = {}
 end
 
-local function spawnPeds()
-	for _, pedConfig in ipairs(Config.Peds) do
-		local coords = pedConfig.possibleLocations[math.random(#pedConfig.possibleLocations)]
+---@param positions vector4[]
+local function spawnPeds(positions)
+	for i, pedConfig in ipairs(Config.Peds) do
+		local coords = positions[i]
+		if not coords then break end
 
 		lib.requestModel(pedConfig.model)
-		local ped = CreatePed(4, pedConfig.model, coords.x, coords.y, coords.z - 1, coords.w, true, true)
+		local ped = CreatePed(4, pedConfig.model, coords.x, coords.y, coords.z - 1, coords.w, false, false)
+		SetEntityAsMissionEntity(ped, true, true)
 		FreezeEntityPosition(ped, true)
 		SetEntityInvincible(ped, true)
 		SetBlockingOfNonTemporaryEvents(ped, true)
@@ -42,20 +45,27 @@ local function spawnPeds()
 		})
 
 		spawnedPeds[#spawnedPeds + 1] = ped
-		pedLocations[#pedLocations + 1] = coords
 	end
 end
 
 CreateThread(function()
-	spawnPeds()
+	while GetResourceState("ox_target") ~= "started" do
+		Wait(100)
+	end
+
+	local positions = lib.callback.await("pf_blackmarket:server:getPedPositions")
+	if positions then
+		spawnPeds(positions)
+	end
+end)
+
+RegisterNetEvent("pf_blackmarket:client:relocatePeds", function(positions)
+	cleanupPeds()
+	spawnPeds(positions)
 end)
 
 AddEventHandler("onResourceStop", function(resourceName)
 	if resourceName == cache.resource then
 		cleanupPeds()
 	end
-end)
-
-lib.callback.register("pf_blackmarket:client:getPedLocations", function()
-	return pedLocations
 end)

@@ -12,6 +12,12 @@ return {
 		UseOxLogger = true,
 		UseDiscordWebhook = true,
 	},
+
+	-- Udgangspunktet for cronjob er ALTID 00:00, så hvis du vælger EVERY_2_HOURS, hedder den altid 00:00, 02:00, 04:00 osv.
+	-- Mulige presets: EVERY_30_MINUTES, EVERY_HOUR, EVERY_2_HOURS,
+	-- EVERY_4_HOURS, EVERY_6_HOURS, EVERY_12_HOURS, EVERY_DAY
+	RelocationSchedule = CronSchedule.EVERY_HOUR,
+
 	Peds = {
 		{
 			model = "g_m_m_chiboss_01",
