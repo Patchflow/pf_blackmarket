@@ -1,5 +1,5 @@
----@type Config
-local Config = lib.load("config.config")
+---@type ServerConfig
+local ServerConfig = load(LoadResourceFile(cache.resource, "config/config.sv.lua"), "@@" .. cache.resource)()
 
 ---@class Logger
 local Logger = {}
@@ -33,19 +33,21 @@ local function getLocalizedError(reason)
 end
 
 ---@param source number
+---@param storeId string
 ---@param items CartItemData[]
 ---@param totalPrice number
+---@param paymentType string
 ---@param success boolean
 ---@param reason string?
-function Logger.LogPurchase(source, items, totalPrice, success, reason)
-	if not Config.Logging.Enabled then
+function Logger.LogPurchase(source, storeId, items, totalPrice, paymentType, success, reason)
+	if not ServerConfig.Logging.Enabled then
 		return
 	end
 
 	local playerName = getPlayerName(source)
 	local itemList = formatItemList(items)
 
-	if Config.Logging.UseOxLogger then
+	if ServerConfig.Logging.UseOxLogger then
 		if success then
 			lib.logger(
 				tostring(source),
@@ -53,7 +55,7 @@ function Logger.LogPurchase(source, items, totalPrice, success, reason)
 				locale("log.purchase_success", #items, totalPrice) .. " | Items: " .. itemList,
 				"blackmarket",
 				"purchase",
-				Config.PaymentType
+				paymentType
 			)
 		else
 			local localizedError = getLocalizedError(reason)
@@ -68,17 +70,18 @@ function Logger.LogPurchase(source, items, totalPrice, success, reason)
 		end
 	end
 
-	if Config.Logging.UseDiscordWebhook and Config.DiscordWebhook and Config.DiscordWebhook ~= "" then
-		Logger.SendDiscordLog(playerName, itemList, totalPrice, success, reason)
+	if ServerConfig.Logging.UseDiscordWebhook and ServerConfig.DiscordWebhook and ServerConfig.DiscordWebhook ~= "" then
+		Logger.SendDiscordLog(playerName, storeId, itemList, totalPrice, success, reason)
 	end
 end
 
 ---@param playerName string
+---@param storeId string
 ---@param itemList string
 ---@param totalPrice number
 ---@param success boolean
 ---@param reason string?
-function Logger.SendDiscordLog(playerName, itemList, totalPrice, success, reason)
+function Logger.SendDiscordLog(playerName, storeId, itemList, totalPrice, success, reason)
 	local color = success and 3066993 or 15158332
 	local localizedError = getLocalizedError(reason)
 	local title = success and locale("log.discord_title_success") or locale("log.discord_title_failed", localizedError)
@@ -88,6 +91,11 @@ function Logger.SendDiscordLog(playerName, itemList, totalPrice, success, reason
 			title = title,
 			color = color,
 			fields = {
+				{
+					name = "Store",
+					value = storeId,
+					inline = true
+				},
 				{
 					name = locale("log.discord_player"),
 					value = playerName,
@@ -111,7 +119,7 @@ function Logger.SendDiscordLog(playerName, itemList, totalPrice, success, reason
 		}
 	}
 
-	PerformHttpRequest(Config.DiscordWebhook, function() end, "POST", json.encode({
+	PerformHttpRequest(ServerConfig.DiscordWebhook, function() end, "POST", json.encode({
 		username = "Patchflow - Blackmarket",
 		embeds = embed
 	}), {

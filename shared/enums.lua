@@ -6,6 +6,7 @@ PaymentType = {
 
 ---@enum PurchaseError
 PurchaseError = {
+	INVALID_STORE = "invalid_store",
 	INVALID_CATEGORY = "invalid_category",
 	INVALID_ITEM = "invalid_item",
 	INVALID_QUANTITY = "invalid_quantity",

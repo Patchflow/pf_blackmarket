@@ -1,11 +1,38 @@
+local Config = load(LoadResourceFile(cache.resource, "config/config.cl.lua"), "@@" .. cache.resource)()
+
 local nuiVisible = false
 
---- @param state boolean?
-function ToggleNui(state)
-	if not state then
+local activeStoreId = nil
+
+function GetActiveStoreId()
+	return activeStoreId
+end
+
+local function sendStoreConfig(storeId)
+	local store = storeId and Config.Stores[storeId]
+
+	SendNUIMessage({
+		action = NuiMessageType.SET_CONFIG,
+		data = {
+			imageUrl = Config.ImageUrl,
+			categories = store and store.Categories or {},
+			locale = lib.getLocales()
+		}
+	})
+end
+
+function ToggleNui(state, storeId)
+	if state == nil then
 		nuiVisible = not nuiVisible
 	else
 		nuiVisible = state
+	end
+
+	if nuiVisible and storeId then
+		activeStoreId = storeId
+		sendStoreConfig(storeId)
+	elseif not nuiVisible then
+		activeStoreId = nil
 	end
 
 	SendNUIMessage({
@@ -18,33 +45,19 @@ function ToggleNui(state)
 	blurFunc(300)
 end
 
----@param cb function
 RegisterNUICallback(NuiCallbackType.NUI_CLOSE, function(_, cb)
 	ToggleNui(false)
 	cb("ok")
 end)
 
----@param data PurchaseData
----@param cb function
 RegisterNUICallback(NuiCallbackType.PROCESS_PURCHASE, function(data, cb)
-	---@type PurchaseResult
+	data.storeId = activeStoreId
 	local response = lib.callback.await("pf_blackmarket:server:processPurchase", false, data)
 	cb(response)
 end)
 
 RegisterNUICallback(NuiCallbackType.REQUEST_CONFIG, function(_, cb)
-	---@type Config
-	local config = lib.load("config.config")
-
-	SendNUIMessage({
-		action = NuiMessageType.SET_CONFIG,
-		data = {
-			imageUrl = config.ImageUrl,
-			categories = config.Categories,
-			locale = lib.getLocales()
-		}
-	})
-
+	sendStoreConfig(activeStoreId)
 	cb("ok")
 end)
 

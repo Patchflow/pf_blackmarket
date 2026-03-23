@@ -19,6 +19,8 @@ function Framework.RemovePlayerMoney(source, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return false end
 
+    if xPlayer.getAccount("bank").money < amount then return false end
+
     xPlayer.removeAccountMoney("bank", amount)
     return true
 end

@@ -7,8 +7,8 @@ author "Patchflow"
 description "Modern Blackmarket System"
 version "1.0.0"
 
-ui_page "web/dist/index.html"
---ui_page "http://localhost:3000/"
+--ui_page "web/dist/index.html"
+ui_page "http://localhost:3000/"
 
 shared_scripts {
 	"@ox_lib/init.lua",
@@ -26,7 +26,7 @@ server_scripts {
 
 files {
 	"locales/*.json",
-	"config/config.lua",
+	"config/config.cl.lua",
 	"web/dist/**/*",
 	"server/framework/*.lua",
 	"server/logger.lua"

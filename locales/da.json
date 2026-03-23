@@ -2,7 +2,9 @@
 	"ui.blackmarket": "Blackmarket",
 	"ui.cart": "Indkøbskurv",
 	"ui.cart_empty": "Indkøbskurven er tom",
+	"ui.cart_empty_hint": "Gennemse items og tilføj dem til din kurv",
 	"ui.no_categories": "Ingen Kategorier",
+	"ui.no_categories_hint": "Intet lager tilgængeligt",
 	"ui.price": "%s DKK",
 	"ui.open_blackmarket": "Åben Blackmarket",
 	"ui.cancel": "Annuller",
@@ -13,7 +15,10 @@
 
 	"item.add_to_cart": "Tilføj til kurv",
 	"item.not_found": "Ingen items fundet",
+	"item.select_category": "Vælg en kategori for at gennemse",
+	"item.empty_category": "Intet tilgængeligt i denne kategori",
 
+	"error.invalid_store": "Ugyldig butik",
 	"error.purchase_failed": "Køb Fejlede",
 	"error.invalid_category": "Ugyldig kategori",
 	"error.invalid_item": "Ugyldigt item",

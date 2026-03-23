@@ -3,13 +3,10 @@ if cache.resource ~= "pf_blackmarket" then
 	return
 end
 
----@type Config
-local Config = lib.load("config.config")
+local Config = load(LoadResourceFile(cache.resource, "config/config.cl.lua"), "@@" .. cache.resource)()
 
----@type Logger
 local Logger = lib.load("server.logger")
 
----@return FrameworkServer
 local function LoadFramework()
 	if GetResourceState("es_extended") == "started" then
 		return lib.load("server.framework.esx")
@@ -19,20 +16,13 @@ local function LoadFramework()
 	end
 
 	lib.print.error(locale("error.no_framework"))
-	return {}
+	return nil
 end
 
----@type FrameworkServer
 local Framework = LoadFramework()
 
----@param category string
----@param itemName string
----@param quantity number
----@return boolean success
----@return string? error
----@return ItemConfig? itemData
-local function validatePurchase(category, itemName, quantity)
-	local categoryData = Config.Categories[category]
+local function validatePurchase(categories, category, itemName, quantity)
+	local categoryData = categories[category]
 	if not categoryData then
 		return false, PurchaseError.INVALID_CATEGORY, nil
 	end
@@ -57,21 +47,15 @@ local function validatePurchase(category, itemName, quantity)
 	return true, nil, itemData
 end
 
----@param items CartItemData[]
----@return boolean success
----@return string? error
----@return ValidatedItem[] validatedItems
----@return number totalPrice
----@return number totalWeight
-local function validateCartItems(items)
+local function validateCartItems(categories, items)
 	local totalWeight = 0
 	local totalPrice = 0
-	---@type ValidatedItem[]
 	local validatedItems = {}
 
 	for i = 1, #items do
 		local cartItem = items[i]
 		local success, error, itemData = validatePurchase(
+			categories,
 			cartItem.category,
 			cartItem.name,
 			cartItem.quantity
@@ -99,57 +83,45 @@ local function validateCartItems(items)
 	return true, nil, validatedItems, totalPrice, totalWeight
 end
 
----@param source number
----@param totalPrice number
----@return boolean success
-local function checkPlayerFunds(source, totalPrice)
-	local playerMoney
-	if Config.PaymentType == PaymentType.CASH then
-		playerMoney = exports.ox_inventory:Search(source, "count", Config.CashItem) or 0
-	else
+local function checkPlayerFunds(source, store, totalPrice)
+	local playerMoney = 0
+	if store.PaymentType == PaymentType.CASH then
+		playerMoney = exports.ox_inventory:Search(source, "count", store.CashItem) or 0
+	elseif Framework then
 		playerMoney = Framework.GetPlayerMoney(source)
 	end
 
 	return playerMoney >= totalPrice
 end
 
----@param source number
----@param totalPrice number
----@return boolean success
-local function processPayment(source, totalPrice)
-	if Config.PaymentType == PaymentType.CASH then
-		return exports.ox_inventory:RemoveItem(source, Config.CashItem, totalPrice)
-	else
+local function processPayment(source, store, totalPrice)
+	if store.PaymentType == PaymentType.CASH then
+		return exports.ox_inventory:RemoveItem(source, store.CashItem, totalPrice)
+	elseif Framework then
 		return Framework.RemovePlayerMoney(source, totalPrice)
 	end
+	return false
 end
 
----@param source number
----@param totalPrice number
-local function refundPayment(source, totalPrice)
-	if Config.PaymentType == PaymentType.CASH then
-		exports.ox_inventory:AddItem(source, Config.CashItem, totalPrice)
-	else
+local function refundPayment(source, store, totalPrice)
+	if store.PaymentType == PaymentType.CASH then
+		exports.ox_inventory:AddItem(source, store.CashItem, totalPrice)
+	elseif Framework then
 		Framework.AddPlayerMoney(source, totalPrice)
 	end
 end
 
----@param source number
----@param validatedItems ValidatedItem[]
----@param totalPrice number
----@return boolean success
----@return string? error
-local function addItemsToInventory(source, validatedItems, totalPrice)
+local function addItemsToInventory(source, store, validatedItems, totalPrice)
 	for i = 1, #validatedItems do
 		local item = validatedItems[i]
 		local addSuccess = exports.ox_inventory:AddItem(source, item.name, item.quantity, item.metadata)
 
 		if not addSuccess then
-			refundPayment(source, totalPrice)
+			refundPayment(source, store, totalPrice)
 
 			for j = 1, i - 1 do
 				local prevItem = validatedItems[j]
-				exports.ox_inventory:RemoveItem(source, prevItem.name, prevItem.quantity)
+				exports.ox_inventory:RemoveItem(source, prevItem.name, prevItem.quantity, prevItem.metadata)
 			end
 
 			return false, PurchaseError.INVENTORY_FULL
@@ -159,89 +131,129 @@ local function addItemsToInventory(source, validatedItems, totalPrice)
 	return true
 end
 
----@type vector4[]
-local currentPedPositions = {}
+local processingPlayers = {}
 
-local function pickPedPositions()
+local storePositions = {}
+
+local function pickPedPositions(peds)
 	local positions = {}
-	for _, pedConfig in ipairs(Config.Peds) do
+	for _, pedConfig in ipairs(peds) do
 		positions[#positions + 1] = pedConfig.possibleLocations[math.random(#pedConfig.possibleLocations)]
 	end
 	return positions
 end
 
-local function relocatePeds()
-	currentPedPositions = pickPedPositions()
-	TriggerClientEvent("pf_blackmarket:client:relocatePeds", -1, currentPedPositions)
+for storeId, store in pairs(Config.Stores) do
+	storePositions[storeId] = pickPedPositions(store.Peds)
+
+	lib.cron.new(store.RelocationSchedule, function()
+		storePositions[storeId] = pickPedPositions(store.Peds)
+		TriggerClientEvent("pf_blackmarket:client:relocatePeds", -1, storeId, storePositions[storeId])
+	end, { maxDelay = 60 })
 end
 
-currentPedPositions = pickPedPositions()
-
-lib.cron.new(Config.RelocationSchedule, function()
-	relocatePeds()
-end, { maxDelay = 60 })
-
 lib.callback.register("pf_blackmarket:server:getPedPositions", function()
-	return currentPedPositions
+	return storePositions
 end)
 
----@param source number
----@param data PurchaseData
----@return PurchaseResult
+AddEventHandler("playerDropped", function()
+	processingPlayers[source] = nil
+end)
+
 lib.callback.register("pf_blackmarket:server:processPurchase", function(source, data)
-	if not Framework then
-		Logger.LogPurchase(source, data.items, 0, false, PurchaseError.NO_FRAMEWORK)
-		return { success = false, reason = PurchaseError.NO_FRAMEWORK }
+	if processingPlayers[source] then
+		return { success = false, reason = PurchaseError.PURCHASE_FAILED }
 	end
 
-	if #currentPedPositions == 0 then
-		Logger.LogPurchase(source, data.items, 0, false, PurchaseError.TOO_FAR)
-		return { success = false, reason = PurchaseError.TOO_FAR }
-	end
+	processingPlayers[source] = true
 
-	local playerPos = GetEntityCoords(GetPlayerPed(source))
-	local isNearPed = false
-
-	for i = 1, #currentPedPositions do
-		local pedPos = currentPedPositions[i]
-		if #(playerPos - vec3(pedPos.x, pedPos.y, pedPos.z)) <= 5.0 then
-			isNearPed = true
-			break
+	local ok, result = pcall(function()
+		if not Framework then
+			Logger.LogPurchase(source, data.storeId or "unknown", data.items, 0, "unknown", false, PurchaseError.NO_FRAMEWORK)
+			return { success = false, reason = PurchaseError.NO_FRAMEWORK }
 		end
+
+		if type(data.items) ~= "table" or #data.items == 0 then
+			return { success = false, reason = PurchaseError.VALIDATION_FAILED }
+		end
+
+		for _, item in ipairs(data.items) do
+			if type(item.name) ~= "string" or type(item.quantity) ~= "number" or type(item.category) ~= "string" then
+				return { success = false, reason = PurchaseError.VALIDATION_FAILED }
+			end
+
+			if item.quantity ~= math.floor(item.quantity) or item.quantity <= 0 then
+				return { success = false, reason = PurchaseError.INVALID_QUANTITY }
+			end
+		end
+
+		local storeId = data.storeId
+		local store = storeId and Config.Stores[storeId]
+
+		if not store then
+			Logger.LogPurchase(source, storeId or "unknown", data.items, 0, "unknown", false, PurchaseError.INVALID_STORE)
+			return { success = false, reason = PurchaseError.INVALID_STORE }
+		end
+
+		local positions = storePositions[storeId]
+		if not positions or #positions == 0 then
+			Logger.LogPurchase(source, storeId, data.items, 0, store.PaymentType, false, PurchaseError.TOO_FAR)
+			return { success = false, reason = PurchaseError.TOO_FAR }
+		end
+
+		local playerPos = GetEntityCoords(GetPlayerPed(source))
+		local isNearPed = false
+
+		for i = 1, #positions do
+			local pedPos = positions[i]
+			if #(playerPos - vec3(pedPos.x, pedPos.y, pedPos.z)) <= 4.0 then
+				isNearPed = true
+				break
+			end
+		end
+
+		if not isNearPed then
+			Logger.LogPurchase(source, storeId, data.items, 0, store.PaymentType, false, PurchaseError.TOO_FAR)
+			return { success = false, reason = PurchaseError.TOO_FAR }
+		end
+
+		local success, error, validatedItems, totalPrice, totalWeight = validateCartItems(store.Categories, data.items)
+		if not success then
+			Logger.LogPurchase(source, storeId, data.items, totalPrice, store.PaymentType, false, error)
+			return { success = false, reason = error }
+		end
+
+		if not exports.ox_inventory:CanCarryWeight(source, totalWeight) then
+			Logger.LogPurchase(source, storeId, data.items, totalPrice, store.PaymentType, false, PurchaseError.INSUFFICIENT_WEIGHT)
+			return { success = false, reason = PurchaseError.INSUFFICIENT_WEIGHT }
+		end
+
+		if not checkPlayerFunds(source, store, totalPrice) then
+			Logger.LogPurchase(source, storeId, data.items, totalPrice, store.PaymentType, false, PurchaseError.INSUFFICIENT_FUNDS)
+			return { success = false, reason = PurchaseError.INSUFFICIENT_FUNDS }
+		end
+
+		if not processPayment(source, store, totalPrice) then
+			Logger.LogPurchase(source, storeId, data.items, totalPrice, store.PaymentType, false, PurchaseError.PAYMENT_FAILED)
+			return { success = false, reason = PurchaseError.PAYMENT_FAILED }
+		end
+
+		local itemSuccess, itemError = addItemsToInventory(source, store, validatedItems, totalPrice)
+		if not itemSuccess then
+			Logger.LogPurchase(source, storeId, data.items, totalPrice, store.PaymentType, false, itemError)
+			return { success = false, reason = itemError }
+		end
+
+		Logger.LogPurchase(source, storeId, data.items, totalPrice, store.PaymentType, true, nil)
+		return { success = true }
+	end)
+
+	processingPlayers[source] = nil
+
+	if not ok then
+		lib.print.error("processPurchase error: " .. tostring(result))
+		return { success = false, reason = PurchaseError.PURCHASE_FAILED }
 	end
 
-	if not isNearPed then
-		Logger.LogPurchase(source, data.items, 0, false, PurchaseError.TOO_FAR)
-		return { success = false, reason = PurchaseError.TOO_FAR }
-	end
-
-	local success, error, validatedItems, totalPrice, totalWeight = validateCartItems(data.items)
-	if not success then
-		Logger.LogPurchase(source, data.items, totalPrice, false, error)
-		return { success = false, reason = error }
-	end
-
-	if not exports.ox_inventory:CanCarryWeight(source, totalWeight) then
-		Logger.LogPurchase(source, data.items, totalPrice, false, PurchaseError.INSUFFICIENT_WEIGHT)
-		return { success = false, reason = PurchaseError.INSUFFICIENT_WEIGHT }
-	end
-
-	if not checkPlayerFunds(source, totalPrice) then
-		Logger.LogPurchase(source, data.items, totalPrice, false, PurchaseError.INSUFFICIENT_FUNDS)
-		return { success = false, reason = PurchaseError.INSUFFICIENT_FUNDS }
-	end
-
-	if not processPayment(source, totalPrice) then
-		Logger.LogPurchase(source, data.items, totalPrice, false, PurchaseError.PAYMENT_FAILED)
-		return { success = false, reason = PurchaseError.PAYMENT_FAILED }
-	end
-
-	local itemSuccess, itemError = addItemsToInventory(source, validatedItems, totalPrice)
-	if not itemSuccess then
-		Logger.LogPurchase(source, data.items, totalPrice, false, itemError)
-		return { success = false, reason = itemError }
-	end
-
-	Logger.LogPurchase(source, data.items, totalPrice, true, nil)
-	return { success = true }
+	return result
 end)

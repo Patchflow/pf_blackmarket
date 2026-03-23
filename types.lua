@@ -21,15 +21,20 @@
 ---@field UseOxLogger boolean
 ---@field UseDiscordWebhook boolean
 
----@class Config
----@field ImageUrl string
+---@class StoreConfig
 ---@field PaymentType PaymentType
 ---@field CashItem string
----@field DiscordWebhook string
----@field Logging LoggingConfig
 ---@field RelocationSchedule CronSchedule
 ---@field Peds PedConfig[]
 ---@field Categories table<string, CategoryConfig>
+
+---@class ServerConfig
+---@field DiscordWebhook string
+---@field Logging LoggingConfig
+
+---@class Config
+---@field ImageUrl string
+---@field Stores table<string, StoreConfig>
 
 ---@class CartItemData
 ---@field name string
@@ -37,6 +42,7 @@
 ---@field category string
 
 ---@class PurchaseData
+---@field storeId string
 ---@field items CartItemData[]
 
 ---@class PurchaseResult
@@ -54,5 +60,5 @@
 ---@field AddPlayerMoney fun(source: number, amount: number): boolean
 
 ---@class Logger
----@field LogPurchase fun(source: number, items: CartItemData[], totalPrice: number, success: boolean, reason: string?)
----@field SendDiscordLog fun(playerName: string, itemList: string, totalPrice: number, success: boolean, reason: string?)
+---@field LogPurchase fun(source: number, storeId: string, items: CartItemData[], totalPrice: number, paymentType: PaymentType, success: boolean, reason: string?)
+---@field SendDiscordLog fun(playerName: string, storeId: string, itemList: string, totalPrice: number, success: boolean, reason: string?)

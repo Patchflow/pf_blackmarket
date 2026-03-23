@@ -13,7 +13,13 @@
 
 	"item.add_to_cart": "Add to Cart",
 	"item.not_found": "No items found",
+	"item.select_category": "Select a category to browse",
+	"item.empty_category": "Nothing available in this category",
 
+	"ui.cart_empty_hint": "Browse items and add them to your cart",
+	"ui.no_categories_hint": "No stock available",
+
+	"error.invalid_store": "Invalid store",
 	"error.purchase_failed": "Purchase Failed",
 	"error.invalid_category": "Invalid category",
 	"error.invalid_item": "Invalid item",
