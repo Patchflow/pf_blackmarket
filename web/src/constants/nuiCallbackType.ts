@@ -1,0 +1,5 @@
+export const NuiCallbackType = {
+	NUI_CLOSE: "NUI_CLOSE",
+	REQUEST_CONFIG: "REQUEST_CONFIG",
+	PROCESS_PURCHASE: "PROCESS_PURCHASE",
+} as const;
